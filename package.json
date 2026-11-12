@@ -1,7 +1,7 @@
 {
-  "name": "maplibre-contour",
-  "version": "0.1.1",
-  "description": "Render contour lines from raster elevation tiles in maplibre-gl-js",
+  "name": "maplibre-contour-formlines",
+  "version": "0.1.0",
+  "description": "Generate contour and form lines from raster elevation tiles in MapLibre GL JS",
   "unpkg": "dist/index.min.js",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -30,12 +30,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/onthegomap/maplibre-contour.git"
+    "url": "git+https://github.com/tjmsy/maplibre-contour-formlines.git"
   },
   "type": "module",
-  "author": "Michael Barry",
-  "license": "BSD-3-Clause",
-  "homepage": "https://github.com/onthegomap/maplibre-contour",
+  "author": "tjmsy",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/tjmsy/maplibre-contour-formlines",
   "files": [
     "build/",
     "dist/*",
