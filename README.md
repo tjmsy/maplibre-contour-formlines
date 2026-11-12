@@ -28,6 +28,13 @@ the demo using Node.js built-ins. It uses OpenFreeMap Liberty for the basemap
 and Mapterhorn Terrarium tiles for elevation contours. It starts near Mount
 Everest; use the map controls or URL hash to change the view.
 
+## Publish the demo with GitHub Pages
+
+In the repository settings, set **Pages → Build and deployment → Source** to
+**GitHub Actions**. The workflow deploys the demo on pushes to `main`; it can
+also be run manually from the Actions tab. It builds the library and publishes
+only `index.html` and the generated `dist` directory.
+
 To use it, import the [maplibre-contour](https://www.npmjs.com/package/maplibre-contour) package with a script tag:
 
 ```html
