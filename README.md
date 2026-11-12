@@ -1,119 +1,72 @@
-# maplibre-contour
+# maplibre-contour-formlines
 
-> **Note (Fork & License Notice)**
-> This is a custom fork of [onthegomap/maplibre-contour](https://github.com/onthegomap/maplibre-contour) that adds form lines generation based on code from [karttapullautin](https://github.com/karttapullautin/karttapullautin).
->
-> - **License:** This project is distributed under the **GNU General Public License v3.0**. Copyright and license notices for code from the upstream project and third-party dependencies are retained in [LICENSE](LICENSE).
-> - **Distribution:** Not published to npm. Intended to be consumed directly via GitHub dependency (`github:tjmsy/maplibre-contour-formlines`).
+Generate contour lines and Karttapullautin-inspired form lines from raster DEM tiles in [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js). This project builds on [onthegomap/maplibre-contour](https://github.com/onthegomap/maplibre-contour).
 
----
+## Demo
 
-maplibre-contour is a plugin to render contour lines in [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) from `raster-dem` sources that powers the terrain mode for [onthegomap.com](https://onthegomap.com).
+The demo in [`index.html`](./index.html) shows contours and form lines together. It also lets you toggle terrain shading and export the visible contour, index-contour, and form-line features as GeoJSON.
 
-![Topographic map of Mount Washington](demo.png)
-
-[Form-lines demo source](./index.html) (run locally; see instructions below)
-
-## Run the form-lines demo
-
-Build the local fork and start the demo server:
+To build and run it locally:
 
 ```sh
 npm ci
 npm run demo
 ```
 
-Open `http://localhost:8000/`. The command builds the local bundle and serves
-the demo using Node.js built-ins. It uses OpenFreeMap Liberty for the basemap
-and Mapterhorn Terrarium tiles for elevation contours. It starts near Mount
-Everest; use the map controls or URL hash to change the view.
+Open <http://localhost:8000/>. The demo uses OpenFreeMap for the basemap and Mapterhorn Terrarium tiles for elevation data.
 
-## Publish the demo with GitHub Pages
+The GitHub Pages workflow deploys the demo when changes are pushed to `main`. To enable it, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 
-In the repository settings, set **Pages → Build and deployment → Source** to
-**GitHub Actions**. The workflow deploys the demo on pushes to `main`; it can
-also be run manually from the Actions tab. It builds the library and publishes
-only `index.html` and the generated `dist` directory.
+## Use form lines
 
-To use it, import the [maplibre-contour](https://www.npmjs.com/package/maplibre-contour) package with a script tag:
+Build the library with `npm run build`. The browser bundle is generated at `dist/index.min.js`; load it after MapLibre GL JS. The bundle exposes `mlcontour`.
 
-```html
-<script src="https://unpkg.com/maplibre-contour@0.1.0/dist/index.min.js"></script>
-```
-
-Or as an ES6 module: `npm add maplibre-contour`
+Create a `DemSource` for your raster DEM tiles and register its protocol with MapLibre:
 
 ```js
-import mlcontour from "maplibre-contour";
-```
-
-Then to use, first create a `DemSource` and register it with maplibre:
-
-```js
-var demSource = new mlcontour.DemSource({
-  url: "https://url/of/dem/source/{z}/{x}/{y}.png",
-  encoding: "terrarium", // "mapbox" or "terrarium" default="terrarium"
+const demSource = new mlcontour.DemSource({
+  url: "https://example.com/dem/{z}/{x}/{y}.png",
+  encoding: "terrarium", // or "mapbox"
   maxzoom: 13,
-  worker: true, // offload isoline computation to a web worker to reduce jank
-  cacheSize: 100, // number of most-recent tiles to cache
-  timeoutMs: 10_000, // timeout on fetch requests
 });
 demSource.setupMaplibre(maplibregl);
 ```
 
-Then configure a new contour source and add it to your map:
+Add a vector source. Form lines are enabled by default and are returned in a separate `formlines` source layer:
 
 ```js
-map.addSource("contour-source", {
+map.addSource("contours", {
   type: "vector",
   tiles: [
     demSource.contourProtocolUrl({
-      // convert meters to feet, default=1 for meters
-      multiplier: 3.28084,
       thresholds: {
-        // zoom: [minor, major]
-        11: [200, 1000],
-        12: [100, 500],
-        14: [50, 200],
-        15: [20, 100],
+        // zoom: [minor contour interval, index contour interval]
+        11: [100, 500],
+        12: [50, 200],
+        13: [10, 50],
+        14: [5, 25],
       },
-      // Defaults to true. Set false to generate ordinary contours only.
       formlines: true,
-      // Form lines are generated at half the minor contour interval.
-      // Terrain is classified using the Karttapullautin-inspired threshold.
-      // These three settings are optional; their defaults are shown here.
       formlineSteepness: 0.16,
       formlineAddition: 17,
       formlineMinimumGap: 30,
-      // optional, override vector tile parameters:
-      contourLayer: "contours",
-      elevationKey: "ele",
-      levelKey: "level",
-      extent: 4096,
-      buffer: 1,
     }),
   ],
   maxzoom: 15,
 });
 ```
 
-Form-line features are written to a separate vector source layer named
-`formlines`. This lets a style render them independently without filtering on a
-feature property. The optional settings control the terrain steepness threshold and the
-extension and joining of selected line sections. If omitted, their defaults
-are `0.16`, `17`, and `30`, respectively. Set `formlines: false` to disable
-form-line generation and omit the form-line source layer.
+The form-line options are optional. Their defaults are `formlineSteepness: 0.16`, `formlineAddition: 17`, and `formlineMinimumGap: 30`. Set `formlines: false` to disable form-line generation.
 
-For example, render form lines with a thinner, lighter style:
+Render the `formlines` source layer independently from the ordinary `contours` layer. For example:
 
 ```js
 map.addLayer({
   id: "form-lines",
   type: "line",
-  source: "contour-source",
+  source: "contours",
   "source-layer": "formlines",
   layout: {
-    // Keep the short dash gaps visible.
     "line-cap": "butt",
   },
   paint: {
@@ -124,108 +77,12 @@ map.addLayer({
 });
 ```
 
-Then add contour line and label layers:
+See [`index.html`](./index.html) for a complete working example, including contour styling and MapLibre setup.
 
-```js
-map.addLayer({
-  id: "contour-lines",
-  type: "line",
-  source: "contour-source",
-  "source-layer": "contours",
-  paint: {
-    "line-color": "#BE7A54",
-    // level = highest index in thresholds array the elevation is a multiple of
-    "line-width": ["match", ["get", "level"], 1, 1.7, 1],
-  },
-});
-map.addLayer({
-  id: "contour-labels",
-  type: "symbol",
-  source: "contour-source",
-  "source-layer": "contours",
-  filter: [">", ["get", "level"], 0],
-  layout: {
-    "symbol-placement": "line",
-    "text-size": 10,
-    "text-field": ["concat", ["number-format", ["get", "ele"], {}], "'"],
-    "text-font": ["Noto Sans Bold"],
-  },
-  paint: {
-    "text-halo-color": "white",
-    "text-halo-width": 1,
-  },
-});
-```
+## Credits and license
 
-You can also share the cached tiles with other maplibre sources that need elevation data:
+This project is based on [onthegomap/maplibre-contour](https://github.com/onthegomap/maplibre-contour). Its original copyright and license notices are retained in [LICENSE](LICENSE).
 
-```js
-map.addSource("dem", {
-  type: "raster-dem",
-  encoding: "terrarium",
-  tiles: [demSource.sharedDemProtocolUrl],
-  maxzoom: 13,
-  tileSize: 256,
-});
-```
+Form-line terrain classification is adapted from terrain metrics in [Karttapullautin](https://github.com/karttapullautin/karttapullautin)'s `src/render.rs`. This implementation samples raster DEM data in physical space; it does not reproduce Karttapullautin's point-cloud processing or guarantee identical output.
 
-### Import it to a maplibre worker
-
-This is an alternative method, which reduces bundle size and also supports other protocols, but it's a bit more complicated to setup.
-It's similar to how the RTL plugin works.
-
-Import the script from a CDN:
-
-```ts
-maplibregl.importScriptInWorkers(
-  "https://unpkg.com/maplibre-contour@0.1.0/dist/add-protocol-worker.js",
-);
-
-const dispatcher = maplibregl.getGlobalDispatcher();
-dispatcher.registerMessageHandler("contour-worker" as any, async () => {
-  // when the script finishes loading in the workers it will send out this message.
-
-  await dispatcher.broadcast("contour-worker" as any, {
-    // this is to configure the worker with the relevant parameters
-    demUrlPattern: "https://url/of/dem/source/{z}/{x}/{y}.png", // this can also support other protocols such as pmtiles://
-    encoding: "terrarium",
-    maxzoom: 13,
-  });
-
-  // once this is configured, you can add a source with the following address for example, and layers as described above.
-  map.addSource("contour-source", {
-    type: "vector",
-    tiles: [
-      "dem-contour://{z}/{x}/{y}?contourLayer=contours&elevationKey=ele&levelKey=level&multiplier=3.28084&overzoom=1&thresholds=11*200*1000~12*10*100~13*10*100~14*10*100~15*10*100",
-    ],
-  });
-});
-```
-
-# How it works
-
-![](architecture.png)
-
-[`DemSource.setupMaplibre`](./src/dem-source.ts) uses MapLibre's [`addProtocol`](https://maplibre.org/maplibre-gl-js-docs/api/properties/#addprotocol) utility to register a callback to provide vector tile for the contours source. Each time maplibre requests a vector tile:
-
-- [`DemManager`](./src/dem-manager.ts) fetches (and caches) the raster-dem image tile and its neighbors so that contours are continuous across tile boundaries.
-  - When `DemSource` is configured with `worker: true`, it uses [`RemoteDemManager`](./src/remote-dem-manager.ts) to spawn [`worker.ts`](./src/worker.ts) in a web worker. The web worker runs [`LocalDemManager`](./src/dem-manager.ts) locally and uses the [`Actor`](./src/actor.ts) utility to send cancelable requests and responses between the main and worker thread.
-- [`decode-image.ts`](./src/decode-image.ts) decodes the raster-dem image RGB values to meters above sea level for each pixel in the tile.
-- [`HeightTile`](./src/height-tile.ts) stitches those raw DEM tiles into a "virtual tile" that contains the border of neighboring tiles, aligns elevation measurements to the tile grid, and smooths the elevation measurements.
-- [`isoline.ts`](./src/isolines.ts) generates contour isolines from a `HeightTile` using a marching-squares implementation derived from [d3-contour](https://github.com/d3/d3-contour).
-- [`vtpbf.ts`](./src/vtpbf.ts) encodes the contour isolines as mapbox vector tile bytes.
-
-MapLibre sends that vector tile to its own worker, decodes it, and renders as if it had been generated by a server.
-
-# Why?
-
-There are a lot of parameters you can tweak when generating contour lines from elevation data like units, thresholds, and smoothing parameters. Pre-generated contour vector tiles require 100+gb of storage for each variation you want to generate and host. Generating them on-the-fly in the browser gives infinite control over the variations you can use on a map from the same source of raw elevation data that maplibre uses to render hillshade.
-
-# License
-
-This project is distributed under the [GNU General Public License v3.0](LICENSE). The form-line terrain classification is adapted from [Karttapullautin](https://github.com/karttapullautin/karttapullautin), particularly its `src/render.rs` terrain metrics. The adaptation samples raster DEM data in physical space; it does not reproduce Karttapullautin's point-cloud processing or guarantee identical output.
-
-Copyright and license notices for the original maplibre-contour project and third-party code are retained in [LICENSE](LICENSE), including:
-
-- [d3-contour](https://github.com/d3/d3-contour) (ISC license)
-- [vt-pbf](https://github.com/mapbox/vt-pbf) (MIT license)
+This project is distributed under the [GNU General Public License v3.0](LICENSE). Copyright and license notices for the upstream maplibre-contour project and third-party code are retained in [LICENSE](LICENSE), including [d3-contour](https://github.com/d3/d3-contour) (ISC) and [vt-pbf](https://github.com/mapbox/vt-pbf) (MIT).
