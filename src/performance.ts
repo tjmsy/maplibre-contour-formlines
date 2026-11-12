@@ -9,8 +9,7 @@ export function getResourceTiming(url: string): PerformanceResourceTiming[] {
   return JSON.parse(
     JSON.stringify(
       (perf?.getEntriesByName?.(url) as
-        | PerformanceResourceTiming[]
-        | undefined) || [],
+        PerformanceResourceTiming[] | undefined) || [],
     ),
   );
 }

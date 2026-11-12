@@ -21,8 +21,7 @@ export interface ContourTile {
   arrayBuffer: ArrayBuffer;
 }
 export interface TransferrableContourTile
-  extends ContourTile,
-    IsTransferrable {}
+  extends ContourTile, IsTransferrable {}
 
 export interface FetchResponse {
   data: Blob;

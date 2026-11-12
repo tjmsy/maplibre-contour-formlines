@@ -160,9 +160,7 @@ function getElevations(
   encoding: Encoding,
   canvas: HTMLCanvasElement | OffscreenCanvas,
   canvasContext:
-    | CanvasRenderingContext2D
-    | OffscreenCanvasRenderingContext2D
-    | null,
+    CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null,
 ): DemTile {
   canvas.width = img.width;
   canvas.height = img.height;
