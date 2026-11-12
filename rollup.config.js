@@ -9,6 +9,8 @@ export const nodeResolve = resolve({
   preferBuiltins: false,
 });
 
+const typescriptBuild = () => typescript({ tsconfig: "./tsconfig.build.json" });
+
 const create = (file, format, plugins = []) => ({
   input: "build/mlcontour.js",
   output: {
@@ -37,7 +39,7 @@ export default [
       throw message;
     },
     treeshake: true,
-    plugins: [nodeResolve, typescript(), commonjs()],
+    plugins: [nodeResolve, typescriptBuild(), commonjs()],
   },
   create("dist/index.cjs", "cjs"),
   create("dist/index.mjs", "esm"),
@@ -49,6 +51,10 @@ export default [
       file: "dist/add-protocol-worker.js",
       format: "esm",
     },
-    plugins: [nodeResolve, typescript(), commonjs()],
-  }
+    plugins: [
+      nodeResolve,
+      typescript({ tsconfig: "./tsconfig.protocol.json" }),
+      commonjs(),
+    ],
+  },
 ];

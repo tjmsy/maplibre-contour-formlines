@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import Pbf from "pbf";
+import { PbfWriter as Pbf } from "pbf";
 
 export const enum GeomType {
   UNKNOWN = 0,

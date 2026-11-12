@@ -4,7 +4,7 @@ import { HeightTile } from "./height-tile";
 import { decodeOptions, encodeOptions } from "./utils";
 import { LocalDemManager } from "./local-dem-manager";
 import { VectorTile } from "@mapbox/vector-tile";
-import Pbf from "pbf";
+import { PbfReader as Pbf } from "pbf";
 
 test("form-line classification rejects steep or incomplete terrain", () => {
   const flat = new HeightTile(40, 40, () => 0);

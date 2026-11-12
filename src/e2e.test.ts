@@ -5,7 +5,7 @@ import { DemSource } from "./dem-source";
 import { MainThreadDispatch } from "./remote-dem-manager";
 import type { DemTile, Timing } from "./types";
 import { VectorTile } from "@mapbox/vector-tile";
-import Pbf from "pbf";
+import { PbfReader as Pbf } from "pbf";
 import { MessageChannel } from "worker_threads";
 import { LocalDemManager } from "./local-dem-manager";
 
@@ -97,8 +97,8 @@ test("e2e fetch tile and shared DEM protocol share cache", async () => {
 
   expect(fetched).toEqual(Uint8Array.from([1, 2]).buffer);
 
-  expect(global.fetch).toBeCalledTimes(1);
-  expect(global.fetch).toBeCalledWith(
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+  expect(global.fetch).toHaveBeenCalledWith(
     "https://example/1/2/3.png",
     expect.anything(),
   );

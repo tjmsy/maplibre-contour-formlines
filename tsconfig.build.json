@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./dist/staging" },
+  "include": ["src/index.ts", "src/worker.ts"],
+  "exclude": ["node_modules", "src/**/*.test.ts"]
+}

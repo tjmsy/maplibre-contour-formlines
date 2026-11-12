@@ -12,7 +12,21 @@ maplibre-contour is a plugin to render contour lines in [MapLibre GL JS](https:/
 
 ![Topographic map of Mount Washington](demo.png)
 
-[Live example](https://onthegomap.github.io/maplibre-contour) | [Code](./index.html)
+[Form-lines demo source](./index.html) (run locally; see instructions below)
+
+## Run the form-lines demo
+
+Build the local fork and start the demo server:
+
+```sh
+npm ci
+npm run demo
+```
+
+Open `http://localhost:8000/`. The command builds the local bundle and serves
+the demo using Node.js built-ins. It uses OpenFreeMap Liberty for the basemap
+and Mapterhorn Terrarium tiles for elevation contours. It starts near Mount
+Everest; use the map controls or URL hash to change the view.
 
 To use it, import the [maplibre-contour](https://www.npmjs.com/package/maplibre-contour) package with a script tag:
 

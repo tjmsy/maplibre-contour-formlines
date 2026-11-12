@@ -15,10 +15,11 @@
   },
   "scripts": {
     "bench": "npm run build && node benchmark.js",
-    "build": "rm -rf dist && rollup -c && npm run generate-types && tsc --project tsconfig.dist.json",
+    "build": "node scripts/clean-dist.mjs && rollup -c && npm run generate-types && tsc --project tsconfig.dist.json",
+    "demo": "npm run build && node scripts/serve-demo.mjs",
     "test-build-v3": "cd test-project-maplibre-3 && rm -rf node_modules && rm -rf package-lock.json && npm i && npm test",
     "test-build": "cd test-project && rm -rf node_modules && rm -rf package-lock.json && npm i && npm test",
-    "generate-types": "tsc --emitDeclarationOnly --declaration --outDir dist && rm -rf dist/*{.t,-j}est.d.ts",
+    "generate-types": "tsc --emitDeclarationOnly --declaration --outDir dist && node scripts/clean-generated-types.mjs",
     "jest": "jest",
     "jest:watch": "jest --watch",
     "test": "run-p typecheck lint jest checkformat",
@@ -69,6 +70,7 @@
     "prettier": "3.10.1",
     "rollup": "4.68.2",
     "ts-jest": "29.4.15",
+    "tslib": "^2.8.1",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.2",
     "whatwg-fetch": "3.6.20"

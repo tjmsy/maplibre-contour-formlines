@@ -2,126 +2,107 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Display a map</title>
-    <meta
-      name="viewport"
-      content="initial-scale=1,maximum-scale=1,user-scalable=no"
-    />
-    <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
-    <script src="https://unpkg.com/maplibre-contour@0.1.1/dist/index.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapLibre Contour Form Lines</title>
     <link
       href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css"
       rel="stylesheet"
     />
+    <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
+    <script src="./dist/index.min.js"></script>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
+      html,
+      body,
       #map {
-        position: absolute;
-        top: 0;
-        bottom: 0;
         width: 100%;
+        height: 100%;
+        margin: 0;
       }
     </style>
   </head>
   <body>
     <div id="map"></div>
     <script>
-      var demSource = new mlcontour.DemSource({
+      const demSource = new mlcontour.DemSource({
         url: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp",
         encoding: "terrarium",
         maxzoom: 12,
+        cacheSize: 100,
       });
-
-      // calls maplibregl.addProtocol for the shared cache and contour protocols
       demSource.setupMaplibre(maplibregl);
 
-      var map = new maplibregl.Map({
+      const map = new maplibregl.Map({
         container: "map",
-        zoom: 12.55,
+        style: "https://tiles.openfreemap.org/styles/liberty",
         center: [86.92731, 27.97797],
+        zoom: 12.3,
         hash: true,
-        style: {
-          version: 8,
-          sources: {
-            dem: {
-              type: "raster-dem",
-              encoding: "terrarium",
-              tiles: [demSource.sharedDemProtocolUrl], // share cached DEM tiles with contour layer
-              maxzoom: 12,
-              tileSize: 256,
-            },
-            contours: {
-              type: "vector",
-              tiles: [
-                demSource.contourProtocolUrl({
-                  // meters to feet
-                  multiplier: 3.28084,
-                  thresholds: {
-                    // zoom: [minor, major]
-                    11: [200, 1000],
-                    12: [100, 500],
-                    13: [100, 500],
-                    14: [50, 200],
-                    15: [20, 100],
-                  },
-                  elevationKey: "ele",
-                  levelKey: "level",
-                  contourLayer: "contours",
-                  overzoom: 1,
-                }),
-              ],
-              maxzoom: 16,
-            },
-          },
-          layers: [
-            {
-              id: "hills",
-              type: "hillshade",
-              source: "dem",
-              paint: {
-                "hillshade-exaggeration": 0.25,
-              },
-            },
-            {
-              id: "contours",
-              type: "line",
-              source: "contours",
-              "source-layer": "contours",
-              paint: {
-                "line-color": "rgba(0,0,0, 50%)",
-                "line-width": ["match", ["get", "level"], 1, 1, 0.5],
-              },
-              layout: {
-                "line-join": "round",
-              },
-            },
-            {
-              id: "contour-text",
-              type: "symbol",
-              source: "contours",
-              "source-layer": "contours",
-              filter: [">", ["get", "level"], 0],
-              paint: {
-                "text-halo-color": "white",
-                "text-halo-width": 1,
-              },
-              layout: {
-                "symbol-placement": "line",
-                "text-anchor": "center",
-                "text-size": 10,
-                "text-field": [
-                  "concat",
-                  ["number-format", ["get", "ele"], {}],
-                  "'",
-                ],
-                "text-font": ["Noto Sans Bold"],
-              },
-            },
-          ],
+        attributionControl: {
+          compact: true,
+          customAttribution:
+            '<a href="https://mapterhorn.com/attribution/">© Mapterhorn</a>',
         },
+      });
+      map.addControl(new maplibregl.NavigationControl());
+
+      map.on("load", () => {
+        map.addSource("contours", {
+          type: "vector",
+          tiles: [
+            demSource.contourProtocolUrl({
+              thresholds: {
+                11: [100, 500],
+                12: [50, 200],
+                13: [20, 100],
+                14: [10, 50],
+              },
+              overzoom: 1,
+              formlines: true,
+            }),
+          ],
+          maxzoom: 14,
+        });
+
+        map.addLayer({
+          id: "form-lines",
+          type: "line",
+          source: "contours",
+          "source-layer": "formlines",
+          paint: {
+            "line-color": "#8b7865",
+            "line-width": 0.55,
+            "line-opacity": 0.65,
+          },
+        });
+        map.addLayer({
+          id: "contour-lines",
+          type: "line",
+          source: "contours",
+          "source-layer": "contours",
+          paint: {
+            "line-color": "#6b5140",
+            "line-width": ["match", ["get", "level"], 1, 1.1, 0.65],
+            "line-opacity": 0.8,
+          },
+        });
+        map.addLayer({
+          id: "contour-labels",
+          type: "symbol",
+          source: "contours",
+          "source-layer": "contours",
+          filter: [">", ["get", "level"], 0],
+          layout: {
+            "symbol-placement": "line",
+            "text-size": 10,
+            "text-field": ["concat", ["get", "ele"], " m"],
+            "text-font": ["Noto Sans Regular"],
+          },
+          paint: {
+            "text-color": "#5d493d",
+            "text-halo-color": "#fffdf6",
+            "text-halo-width": 1.2,
+          },
+        });
       });
     </script>
   </body>

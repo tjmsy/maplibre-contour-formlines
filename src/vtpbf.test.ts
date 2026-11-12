@@ -1,4 +1,4 @@
-import Pbf from "pbf";
+import { PbfReader as Pbf } from "pbf";
 import encodeVectorTile, { GeomType } from "./vtpbf";
 import { VectorTile } from "@mapbox/vector-tile";
 
