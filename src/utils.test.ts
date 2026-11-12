@@ -25,6 +25,10 @@ const fullGlobalOptions: GlobalContourTileOptions = {
   levelKey: "level key",
   multiplier: 123,
   overzoom: 3,
+  formlines: false,
+  formlineSteepness: 0.16,
+  formlineAddition: 17,
+  formlineMinimumGap: 30,
 };
 const fullGlobalOptionsOut: GlobalContourTileOptions = {
   ...fullGlobalOptions,
@@ -45,7 +49,7 @@ afterEach(() => {
 test("parse known ContourTileOptions", () => {
   expect(
     decodeOptions(
-      "buffer=1&contourLayer=contour%20layer&elevationKey=elevation%20key&extent=123&levelKey=level%20key&multiplier=123&overzoom=3&thresholds=10*500~11*100*1000",
+      "buffer=1&contourLayer=contour%20layer&elevationKey=elevation%20key&extent=123&formlineAddition=17&formlineMinimumGap=30&formlineSteepness=0.16&formlines=false&levelKey=level%20key&multiplier=123&overzoom=3&thresholds=10*500~11*100*1000",
     ),
   ).toEqual(fullGlobalOptionsOut);
 });

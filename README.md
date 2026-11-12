@@ -56,6 +56,14 @@ map.addSource("contour-source", {
         14: [50, 200],
         15: [20, 100],
       },
+      // Defaults to true. Set false to generate ordinary contours only.
+      formlines: true,
+      // Form lines are generated at half the minor contour interval.
+      // Terrain is classified using the Karttapullautin-inspired threshold.
+      // These three settings are optional; their defaults are shown here.
+      formlineSteepness: 0.16,
+      formlineAddition: 17,
+      formlineMinimumGap: 30,
       // optional, override vector tile parameters:
       contourLayer: "contours",
       elevationKey: "ele",
@@ -65,6 +73,28 @@ map.addSource("contour-source", {
     }),
   ],
   maxzoom: 15,
+});
+```
+
+Form-line features are written to a separate vector source layer named
+`formlines`. This lets a style render them independently without filtering on a
+feature property. The optional settings control the terrain steepness threshold and the
+extension and joining of selected line sections. If omitted, their defaults
+are `0.16`, `17`, and `30`, respectively. Set `formlines: false` to disable
+form-line generation and omit the form-line source layer.
+
+For example, render form lines with a thinner, lighter style:
+
+```js
+map.addLayer({
+  id: "form-lines",
+  type: "line",
+  source: "contour-source",
+  "source-layer": "formlines",
+  paint: {
+    "line-color": "rgba(0,0,0, 35%)",
+    "line-width": 0.5,
+  },
 });
 ```
 
@@ -167,7 +197,7 @@ There are a lot of parameters you can tweak when generating contour lines from e
 
 # License
 
-This project is distributed under the [GNU General Public License v3.0](LICENSE). It incorporates form lines generation code based on [karttapullautin](https://github.com/karttapullautin/karttapullautin).
+This project is distributed under the [GNU General Public License v3.0](LICENSE). The form-line terrain classification is adapted from [Karttapullautin](https://github.com/karttapullautin/karttapullautin), particularly its `src/render.rs` terrain metrics. The adaptation samples raster DEM data in physical space; it does not reproduce Karttapullautin's point-cloud processing or guarantee identical output.
 
 Copyright and license notices for the original maplibre-contour project and third-party code are retained in [LICENSE](LICENSE), including:
 

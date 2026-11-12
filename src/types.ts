@@ -32,6 +32,14 @@ export interface FetchResponse {
 
 /** Parameters to use when creating a contour vector tile from raw elevation data */
 export interface ContourTileOptions {
+  /** Whether to generate form lines (default true). */
+  formlines?: boolean;
+  /** Maximum terrain steepness for form lines (default 0.16). */
+  formlineSteepness?: number;
+  /** Extend selected form line sections by this many vertices (default 17). */
+  formlineAddition?: number;
+  /** Join gaps shorter than this many vertices (default 30). */
+  formlineMinimumGap?: number;
   /** Factor to scale the elevation meters by to support different units (default 1 for meters) */
   multiplier?: number;
   /**

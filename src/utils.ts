@@ -59,10 +59,16 @@ export function decodeOptions(options: string): GlobalContourTileOptions {
           case "thresholds":
             v = decodeThresholds(v);
             break;
+          case "formlines":
+            v = v === "true";
+            break;
           case "extent":
           case "multiplier":
           case "overzoom":
           case "buffer":
+          case "formlineSteepness":
+          case "formlineAddition":
+          case "formlineMinimumGap":
             v = Number(v);
         }
         return [k, v];

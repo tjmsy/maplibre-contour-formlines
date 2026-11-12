@@ -2,6 +2,7 @@ import AsyncCache from "./cache";
 import defaultDecodeImage from "./decode-image";
 import { HeightTile } from "./height-tile";
 import generateIsolines from "./isolines";
+import { selectFormline, isMultiple, clipLines } from "./form-lines";
 import { copy, encodeIndividualOptions, isAborted, withTimeout } from "./utils";
 import type {
   ContourTile,
@@ -15,6 +16,7 @@ import type {
   IndividualContourTileOptions,
 } from "./types";
 import encodeVectorTile, { GeomType } from "./vtpbf";
+import type { Feature } from "./vtpbf";
 import { Timer } from "./performance";
 
 const defaultGetTile: GetTileFunction = async (
@@ -175,11 +177,32 @@ export class LocalDemManager implements DemManager {
       elevationKey = "ele",
       levelKey = "level",
       subsampleBelow = 100,
+      formlines = true,
+      formlineSteepness = 0.16,
+      formlineAddition = 17,
+      formlineMinimumGap = 30,
     } = options;
 
     // no levels means less than min zoom with levels specified
     if (!levels || levels.length === 0) {
       return Promise.resolve({ arrayBuffer: new ArrayBuffer(0) });
+    }
+    if (
+      formlines &&
+      (!Number.isFinite(formlineSteepness) ||
+        formlineSteepness < 0 ||
+        !Number.isSafeInteger(formlineAddition) ||
+        formlineAddition < 0 ||
+        formlineAddition > 256 ||
+        !Number.isSafeInteger(formlineMinimumGap) ||
+        formlineMinimumGap < 0 ||
+        formlineMinimumGap > 256)
+    ) {
+      return Promise.reject(
+        new Error(
+          "Form line steepness must be non-negative; extension and gap must be integers from 0 to 256",
+        ),
+      );
     }
     const key = [z, x, y, encodeIndividualOptions(options)].join("/");
     const cached = this.contourCache.get(
@@ -210,45 +233,121 @@ export class LocalDemManager implements DemManager {
         }
         const mark = timer?.marker("isoline");
 
+        // Retain enough neighboring terrain to classify line points and apply
+        // the configured extension and gap joining across tile boundaries.
+        const halo = formlines ? Math.min(80, virtualTile.width - 2) : 2;
         if (virtualTile.width >= subsampleBelow) {
-          virtualTile = virtualTile.materialize(2);
+          virtualTile = virtualTile.materialize(halo);
         } else {
           while (virtualTile.width < subsampleBelow) {
-            virtualTile = virtualTile.subsamplePixelCenters(2).materialize(2);
+            virtualTile = virtualTile
+              .subsamplePixelCenters(2)
+              .materialize(halo);
           }
         }
 
         virtualTile = virtualTile
           .averagePixelCentersToGrid()
           .scaleElevation(multiplier)
-          .materialize(1);
+          .materialize(formlines ? halo - 1 : 1);
+
+        const context = Math.min(
+          64,
+          14 + formlineAddition + formlineMinimumGap,
+        );
+        const generationBuffer = formlines
+          ? Math.max(buffer, Math.min(halo - 2, context))
+          : buffer;
+        if (
+          formlines &&
+          (!Number.isSafeInteger(buffer) ||
+            buffer < 0 ||
+            generationBuffer >= halo)
+        ) {
+          return Promise.reject(
+            new Error(
+              `Contour buffer must be a non-negative integer smaller than available terrain halo (${halo})`,
+            ),
+          );
+        }
 
         const isolines = generateIsolines(
-          levels[0],
+          levels[0] / (formlines ? 2 : 1),
           virtualTile,
           extent,
-          buffer,
+          generationBuffer,
         );
 
         mark?.();
+        const steepnessCache = new Map<string, number>();
+        const contourFeatures: Feature[] = [];
+        const formlineFeatures: Feature[] = [];
+        for (const [eleString, geom] of Object.entries(isolines)) {
+          const ele = Number(eleString);
+          const normal = !formlines || isMultiple(ele, levels[0]);
+          const selected = normal
+            ? geom
+            : geom.flatMap((line) =>
+                selectFormline(
+                  line,
+                  virtualTile!,
+                  extent,
+                  levels[0],
+                  (gridY: number) =>
+                    (40075016.6856 *
+                      Math.cos(
+                        Math.atan(
+                          Math.sinh(
+                            Math.PI *
+                              (1 -
+                                (2 * (y + gridY / (virtualTile!.height - 1))) /
+                                  (1 << z)),
+                          ),
+                        ),
+                      )) /
+                    ((1 << z) * (virtualTile!.height - 1)),
+                  steepnessCache,
+                  {
+                    steepness: formlineSteepness,
+                    addition: formlineAddition,
+                    minimumGap: formlineMinimumGap,
+                  },
+                ),
+              );
+          const geometry = formlines
+            ? clipLines(
+                selected,
+                extent,
+                (buffer * extent) / (virtualTile!.width - 1),
+              ).map((line) => line.map(Math.round))
+            : selected;
+          if (!geometry.length) continue;
+          const feature: Feature = {
+            type: GeomType.LINESTRING,
+            geometry,
+            properties: {
+              [elevationKey]: ele,
+              [levelKey]: Math.max(
+                ...levels.map((level, index) =>
+                  isMultiple(ele, level) ? index : 0,
+                ),
+              ),
+            },
+          };
+          if (normal) contourFeatures.push(feature);
+          else formlineFeatures.push(feature);
+        }
         const result = encodeVectorTile({
           extent,
           layers: {
             [contourLayer]: {
-              features: Object.entries(isolines).map(([eleString, geom]) => {
-                const ele = Number(eleString);
-                return {
-                  type: GeomType.LINESTRING,
-                  geometry: geom,
-                  properties: {
-                    [elevationKey]: ele,
-                    [levelKey]: Math.max(
-                      ...levels.map((l, i) => (ele % l === 0 ? i : 0)),
-                    ),
-                  },
-                };
-              }),
+              features: contourFeatures,
             },
+            ...(formlines && formlineFeatures.length
+              ? {
+                  formlines: { features: formlineFeatures },
+                }
+              : {}),
           },
         });
         mark?.();
