@@ -73,10 +73,7 @@
             sourceLayer,
           })) {
             const geojson = feature.toJSON();
-            const key = JSON.stringify([
-              geojson.geometry,
-              geojson.properties,
-            ]);
+            const key = JSON.stringify([geojson.geometry, geojson.properties]);
             if (!uniqueFeatures.has(key)) uniqueFeatures.set(key, geojson);
           }
           return [...uniqueFeatures.values()];
@@ -185,7 +182,7 @@
         map.on("terrain", () => {
           const terrainEnabled = map.getTerrain() !== null;
           map.setMaxPitch(terrainEnabled ? 80 : 0);
-          map.setPitch(terrainEnabled ? 80 : 0);
+          map.setPitch(terrainEnabled ? 70 : 0);
           map.setLayoutProperty(
             "hillshade",
             "visibility",
