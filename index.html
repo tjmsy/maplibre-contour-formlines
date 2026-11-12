@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MapLibre Contour Form Lines</title>
     <link
-      href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css"
+      href="https://unpkg.com/maplibre-gl@6.18.0/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
     <script src="./dist/index.min.js"></script>
     <style>
       html,
@@ -22,12 +21,14 @@
   </head>
   <body>
     <div id="map"></div>
-    <script>
+    <script type="module">
+      import * as maplibregl from "https://unpkg.com/maplibre-gl@6.18.0/dist/maplibre-gl.mjs";
+      import Terrain3dToggle from "https://cdn.jsdelivr.net/gh/tjmsy/maplibre-gl-terrain-3d-toggle/src/maplibre-gl-terrain-3d-toggle.js";
+
       const demSource = new mlcontour.DemSource({
         url: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp",
         encoding: "terrarium",
-        maxzoom: 12,
-        cacheSize: 100,
+        maxzoom: 15,
       });
       demSource.setupMaplibre(maplibregl);
 
@@ -35,13 +36,9 @@
         container: "map",
         style: "https://tiles.openfreemap.org/styles/liberty",
         center: [86.92731, 27.97797],
-        zoom: 12.3,
+        zoom: 15,
         hash: true,
-        attributionControl: {
-          compact: true,
-          customAttribution:
-            '<a href="https://mapterhorn.com/attribution/">© Mapterhorn</a>',
-        },
+        maxPitch: 0,
       });
       map.addControl(new maplibregl.NavigationControl());
 
@@ -53,14 +50,35 @@
               thresholds: {
                 11: [100, 500],
                 12: [50, 200],
-                13: [20, 100],
-                14: [10, 50],
+                13: [10, 50],
+                14: [5, 25],
               },
-              overzoom: 1,
               formlines: true,
             }),
           ],
-          maxzoom: 14,
+          maxzoom: 15,
+          minzoom: 11,
+          attribution:
+            "<a href='https://mapterhorn.com/attribution' target='_blank'>© Mapterhorn</a>",
+        });
+
+        map.addSource("terrainSource", {
+          type: "raster-dem",
+          encoding: "terrarium",
+          tiles: [demSource.sharedDemProtocolUrl],
+          tileSize: 512,
+          maxzoom: 15,
+        });
+
+        map.addLayer({
+          id: "contour-lines",
+          type: "line",
+          source: "contours",
+          "source-layer": "contours",
+          paint: {
+            "line-color": "#BE7A54",
+            "line-width": ["match", ["get", "level"], 1, 1.7, 1],
+          },
         });
 
         map.addLayer({
@@ -69,44 +87,38 @@
           source: "contours",
           "source-layer": "formlines",
           layout: {
-            // Butt caps preserve the narrow gap between dashes.
             "line-cap": "butt",
           },
           paint: {
             "line-color": "#BE7A54",
             "line-width": 0.7,
-            // Dash array values are multiples of line width: 10x on, 2x off.
             "line-dasharray": [10, 2],
           },
         });
+
         map.addLayer({
-          id: "contour-lines",
-          type: "line",
-          source: "contours",
-          "source-layer": "contours",
-          paint: {
-            "line-color": "#BE7A54",
-            // level=1 marks every fifth contour (index contour).
-            "line-width": ["match", ["get", "level"], 1, 1.7, 1],
-          },
+          id: "hillshade",
+          type: "hillshade",
+          source: "terrainSource",
+          layout: { visibility: "none" },
         });
-        map.addLayer({
-          id: "contour-labels",
-          type: "symbol",
-          source: "contours",
-          "source-layer": "contours",
-          filter: [">", ["get", "level"], 0],
-          layout: {
-            "symbol-placement": "line",
-            "text-size": 10,
-            "text-field": ["concat", ["get", "ele"], " m"],
-            "text-font": ["Noto Sans Regular"],
-          },
-          paint: {
-            "text-color": "#5d493d",
-            "text-halo-color": "#fffdf6",
-            "text-halo-width": 1.2,
-          },
+
+        map.addControl(
+          new maplibregl.TerrainControl({
+            source: "terrainSource",
+            exaggeration: 1,
+          }),
+        );
+
+        map.on("terrain", () => {
+          const terrainEnabled = map.getTerrain() !== null;
+          map.setPitch(terrainEnabled ? 60 : 0);
+          map.setMaxPitch(terrainEnabled ? 80 : 0);
+          map.setLayoutProperty(
+            "hillshade",
+            "visibility",
+            terrainEnabled ? "visible" : "none",
+          );
         });
       });
     </script>
