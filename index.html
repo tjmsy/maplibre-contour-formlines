@@ -68,10 +68,15 @@
           type: "line",
           source: "contours",
           "source-layer": "formlines",
+          layout: {
+            // Butt caps preserve the narrow gap between dashes.
+            "line-cap": "butt",
+          },
           paint: {
-            "line-color": "#8b7865",
-            "line-width": 0.55,
-            "line-opacity": 0.65,
+            "line-color": "#BE7A54",
+            "line-width": 0.7,
+            // Dash array values are multiples of line width: 10x on, 2x off.
+            "line-dasharray": [10, 2],
           },
         });
         map.addLayer({
@@ -80,9 +85,9 @@
           source: "contours",
           "source-layer": "contours",
           paint: {
-            "line-color": "#6b5140",
-            "line-width": ["match", ["get", "level"], 1, 1.1, 0.65],
-            "line-opacity": 0.8,
+            "line-color": "#BE7A54",
+            // level=1 marks every fifth contour (index contour).
+            "line-width": ["match", ["get", "level"], 1, 1.7, 1],
           },
         });
         map.addLayer({

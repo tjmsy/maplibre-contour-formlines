@@ -63,8 +63,8 @@ const map = new maplibregl.Map({
         source: "contours",
         "source-layer": "contours",
         paint: {
-          "line-color": "rgba(0,0,0, 50%)",
-          "line-width": ["match", ["get", "level"], 1, 1, 0.5],
+          "line-color": "#BE7A54",
+          "line-width": ["match", ["get", "level"], 1, 1.7, 1],
         },
         layout: {
           "line-join": "round",

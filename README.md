@@ -112,9 +112,14 @@ map.addLayer({
   type: "line",
   source: "contour-source",
   "source-layer": "formlines",
+  layout: {
+    // Keep the short dash gaps visible.
+    "line-cap": "butt",
+  },
   paint: {
-    "line-color": "rgba(0,0,0, 35%)",
-    "line-width": 0.5,
+    "line-color": "#BE7A54",
+    "line-width": 0.7,
+    "line-dasharray": [10, 2],
   },
 });
 ```
@@ -128,9 +133,9 @@ map.addLayer({
   source: "contour-source",
   "source-layer": "contours",
   paint: {
-    "line-color": "rgba(0,0,0, 50%)",
+    "line-color": "#BE7A54",
     // level = highest index in thresholds array the elevation is a multiple of
-    "line-width": ["match", ["get", "level"], 1, 1, 0.5],
+    "line-width": ["match", ["get", "level"], 1, 1.7, 1],
   },
 });
 map.addLayer({
@@ -199,7 +204,7 @@ dispatcher.registerMessageHandler("contour-worker" as any, async () => {
 
 # How it works
 
-<img src="architecture.png" width="500">
+![](architecture.png)
 
 [`DemSource.setupMaplibre`](./src/dem-source.ts) uses MapLibre's [`addProtocol`](https://maplibre.org/maplibre-gl-js-docs/api/properties/#addprotocol) utility to register a callback to provide vector tile for the contours source. Each time maplibre requests a vector tile:
 
