@@ -17,6 +17,10 @@
         height: 100%;
         margin: 0;
       }
+
+      .geojson-export-control button {
+        font-size: 18px;
+      }
     </style>
   </head>
   <body>
@@ -24,6 +28,73 @@
     <script type="module">
       import * as maplibregl from "https://unpkg.com/maplibre-gl@6.18.0/dist/maplibre-gl.mjs";
       import Terrain3dToggle from "https://cdn.jsdelivr.net/gh/tjmsy/maplibre-gl-terrain-3d-toggle/src/maplibre-gl-terrain-3d-toggle.js";
+
+      class ContourGeoJsonExportControl {
+        onAdd(map) {
+          this.map = map;
+          this.container = document.createElement("div");
+          this.container.className =
+            "maplibregl-ctrl maplibregl-ctrl-group geojson-export-control";
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = "💾";
+          button.title = "Download contour GeoJSON files";
+          button.setAttribute(
+            "aria-label",
+            "Download contour, index contour, and form line GeoJSON",
+          );
+          button.addEventListener("click", this.download.bind(this));
+          this.container.appendChild(button);
+
+          return this.container;
+        }
+
+        onRemove() {
+          this.container.remove();
+          this.map = undefined;
+        }
+
+        download() {
+          const features = this.collectFeatures("contours");
+          const formLineFeatures = this.collectFeatures("formlines");
+          const indexContourFeatures = features.filter(
+            (feature) => Number(feature.properties?.level) >= 1,
+          );
+
+          this.downloadGeoJson("contour.geojson", features);
+          this.downloadGeoJson("index-contour.geojson", indexContourFeatures);
+          this.downloadGeoJson("form-line.geojson", formLineFeatures);
+        }
+
+        collectFeatures(sourceLayer) {
+          const uniqueFeatures = new Map();
+          for (const feature of this.map.querySourceFeatures("contours", {
+            sourceLayer,
+          })) {
+            const geojson = feature.toJSON();
+            const key = JSON.stringify([
+              geojson.geometry,
+              geojson.properties,
+            ]);
+            if (!uniqueFeatures.has(key)) uniqueFeatures.set(key, geojson);
+          }
+          return [...uniqueFeatures.values()];
+        }
+
+        downloadGeoJson(filename, features) {
+          const blob = new Blob(
+            [JSON.stringify({ type: "FeatureCollection", features }, null, 2)],
+            { type: "application/geo+json" },
+          );
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = filename;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+        }
+      }
 
       const demSource = new mlcontour.DemSource({
         url: "https://tiles.mapterhorn.com/{z}/{x}/{y}.webp",
@@ -35,12 +106,13 @@
       const map = new maplibregl.Map({
         container: "map",
         style: "https://tiles.openfreemap.org/styles/liberty",
-        center: [86.92731, 27.97797],
+        center: [138.73, 35.246],
         zoom: 15,
         hash: true,
         maxPitch: 0,
       });
       map.addControl(new maplibregl.NavigationControl());
+      map.addControl(new ContourGeoJsonExportControl());
 
       map.on("load", () => {
         map.addSource("contours", {
@@ -112,8 +184,8 @@
 
         map.on("terrain", () => {
           const terrainEnabled = map.getTerrain() !== null;
-          map.setPitch(terrainEnabled ? 60 : 0);
           map.setMaxPitch(terrainEnabled ? 80 : 0);
+          map.setPitch(terrainEnabled ? 80 : 0);
           map.setLayoutProperty(
             "hillshade",
             "visibility",
