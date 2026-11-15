@@ -4,18 +4,7 @@ Generate contour lines and Karttapullautin-inspired form lines from raster DEM t
 
 ## Demo
 
-The demo in [`index.html`](./index.html) shows contours and form lines together. It also lets you toggle terrain shading and export the visible contour, index-contour, and form-line features as GeoJSON.
-
-To build and run it locally:
-
-```sh
-npm ci
-npm run demo
-```
-
-Open <http://localhost:8000/>. The demo uses OpenFreeMap for the basemap and Mapterhorn Terrarium tiles for elevation data.
-
-The GitHub Pages workflow deploys the demo when changes are pushed to `main`. To enable it, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
+Try the [live demo on GitHub Pages](https://tjmsy.github.io/maplibre-contour-formlines/). It shows contours and form lines together, and lets you toggle terrain shading and export the visible contour, index-contour, and form-line features as GeoJSON. It uses OpenFreeMap for the basemap and Mapterhorn Terrarium tiles for elevation data.
 
 ## Use form lines
 
