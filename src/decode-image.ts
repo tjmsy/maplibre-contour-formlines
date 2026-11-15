@@ -179,13 +179,25 @@ export function decodeParsedImage(
   encoding: Encoding,
   input: Uint8ClampedArray,
 ): DemTile {
-  const decoder: (r: number, g: number, b: number) => number =
-    encoding === "mapbox"
-      ? (r, g, b) => -10000 + (r * 256 * 256 + g * 256 + b) * 0.1
-      : (r, g, b) => r * 256 + g + b / 256 - 32768;
   const data = new Float32Array(width * height);
   for (let i = 0; i < input.length; i += 4) {
-    data[i / 4] = decoder(input[i], input[i + 1], input[i + 2]);
+    const r = input[i];
+    const g = input[i + 1];
+    const b = input[i + 2];
+    if (encoding === "gsi") {
+      const unsigned = r * 65536 + g * 256 + b;
+      // GSJ numerical PNG tiles use transparent pixels for no-data. The
+      // signed 24-bit sentinel is also treated as no-data for compatibility
+      // with GSI numerical elevation PNG tiles.
+      data[i / 4] =
+        input[i + 3] === 0 || unsigned === 0x800000
+          ? NaN
+          : (unsigned >= 0x800000 ? unsigned - 0x1000000 : unsigned) * 0.01;
+    } else if (encoding === "mapbox") {
+      data[i / 4] = -10000 + (r * 256 * 256 + g * 256 + b) * 0.1;
+    } else {
+      data[i / 4] = r * 256 + g + b / 256 - 32768;
+    }
   }
   return { width, height, data };
 }

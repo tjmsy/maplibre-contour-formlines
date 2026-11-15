@@ -26,7 +26,7 @@ Create a `DemSource` for your raster DEM tiles and register its protocol with Ma
 ```js
 const demSource = new mlcontour.DemSource({
   url: "https://example.com/dem/{z}/{x}/{y}.png",
-  encoding: "terrarium", // or "mapbox"
+  encoding: "terrarium", // or "mapbox" or "gsi"
   maxzoom: 13,
 });
 demSource.setupMaplibre(maplibregl);
@@ -78,6 +78,8 @@ map.addLayer({
 ```
 
 See [`index.html`](./index.html) for a complete working example, including contour styling and MapLibre setup.
+
+`encoding: "gsi"` decodes signed 24-bit numerical PNG elevation tiles with a 0.01 m scale. Transparent pixels and the `(128, 0, 0)` no-data value become `NaN` for contour generation. The shared DEM protocol returns the original tile bytes unchanged; MapLibre's `raster-dem` source cannot decode this encoding directly, so use it for contours only unless the tile service provides Terrarium or Mapbox encoded tiles.
 
 ## Credits and license
 
