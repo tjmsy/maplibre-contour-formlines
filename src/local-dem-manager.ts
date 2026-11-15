@@ -149,13 +149,28 @@ export class LocalDemManager implements DemManager {
     const newX = Math.floor(x / div);
     const newY = Math.floor(y / div);
 
-    const tile = await this.fetchAndParseTile(
-      zoom,
-      newX,
-      newY,
-      abortController,
-      timer,
-    );
+    let tile: DemTile;
+    try {
+      tile = await this.fetchAndParseTile(
+        zoom,
+        newX,
+        newY,
+        abortController,
+        timer,
+      );
+    } catch (error) {
+      if (zoom === 0 || isAborted(abortController)) throw error;
+      // If a high-resolution DEM tile is missing, try its parent tile and
+      // split it to the requested quadrant. Repeat until a tile is available.
+      return this.fetchDem(
+        z,
+        x,
+        y,
+        { ...options, overzoom: (options.overzoom || 0) + 1 },
+        abortController,
+        timer,
+      );
+    }
 
     return HeightTile.fromRawDem(tile).split(subZ, x % div, y % div);
   }
